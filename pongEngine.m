@@ -46,6 +46,9 @@ classdef pongEngine < handle
         kickoff_delay = 1;
         min_ball_speed= 1;
         frame_delay = 0.009;
+        ball_acceleration_factor = 0.05; %how much ball accelerates each bounce.
+        max_speed = 4; 
+
     end
     
     properties (GetAccess='private',SetAccess='private',Hidden) % color stuff
@@ -60,21 +63,27 @@ classdef pongEngine < handle
         title_color = 'w';
     end
     
-    properties (GetAccess='public',SetAccess='private',Hidden) % scores and current positions
+    properties (GetAccess='public',SetAccess='private',Hidden) % scores
         score = [];
-        ballX = []; %ball location
-        ballY = [];
-        paddle1V = []; 
-        paddle2V = [];
-        ballSpeed=[];
         
     end
     
     properties (GetAccess='public',SetAccess='private',Hidden) % plot handles
         ballPlot = [];
-        paddle1Plot = []; 
+        paddle1Plot = [];
         paddle2Plot = [];
     end
+    
+    properties (GetAccess='public',SetAccess='private',Hidden) % current positions and move stuff   
+        
+        ballX = []; %ball location
+        ballY = [];
+        paddle1V = [];
+        paddle2V = [];
+        ballSpeed=[];
+        ballV=[]; 
+    end
+    
     
     methods
         function self = pongEngine(n,m) % constructor, can specify size
@@ -87,16 +96,16 @@ classdef pongEngine < handle
             
             self.numRows = n;
             self.numColumns = m;
-            %self.paddle1 = ceil(self.numRows/2); % paddle starts central
-            %self.paddle2 = ceil(self.numRows/2);
+            self.paddle1 = ceil(self.numRows/2); % paddle starts central
+            self.paddle2 = ceil(self.numRows/2);
             self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)]; % middle of field
             self.velocity = [randi(3)-2,2*randi(2)-3]; % random initial movement (but not orthogonal)
             
             self.score = [0, 0];
             
-            self.paddle = [0 self.paddle_w self.paddle_w 0 0; self.paddle_h self.paddle_h 0 0 self.paddle_h];
-            self.paddle1 = [self.paddle(1,:)+self.paddle_space; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
-            self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            %self.paddle = [0 self.paddle_w self.paddle_w 0 0; self.paddle_h self.paddle_h 0 0 self.paddle_h];
+            %self.paddle1 = [self.paddle(1,:)+self.paddle_space; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            %self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
         end
         
         function createCourt(self)
@@ -161,6 +170,18 @@ classdef pongEngine < handle
             set(self.paddle2Plot, 'Xdata', self.paddle2(1,:), 'YData', self.paddle2(2,:));
             drawnow;
             pause(self.frame_delay);
+        end
+        
+        function ballbounce (V)
+            %increase first dimension by a random value
+            V(1) = V(1) * (rand + 1);
+            %normalize vector
+            V = V ./ (sqrt(V(1)^2 + V(2)^2));
+            self.ballV = V;
+            %to make it more challenging, the ball increases the speed 
+            if (self.ballSpeed +  self.ball_acceleration_factor < self.max_speed)
+                self.ballSpeed = self.ballSpeed +  self.ball_acceleration_factor;
+            end
         end
         
         
