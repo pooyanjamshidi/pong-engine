@@ -7,8 +7,7 @@ classdef pongEngine < handle
     properties (GetAccess='public',SetAccess='private')
         numRows;
         numColumns;
-        paddle1; % row-index starting at 1, always column 1
-        paddle2; % in last column
+        
         ball; % vector location
         score1=0;
         score2=0;
@@ -41,7 +40,6 @@ classdef pongEngine < handle
     end
     
     properties (GetAccess='public',SetAccess='private',Hidden) % game stuff
-        
         max_points = 5;
         kickoff_delay = 1;
         min_ball_speed= 1;
@@ -65,7 +63,8 @@ classdef pongEngine < handle
     
     properties (GetAccess='public',SetAccess='private',Hidden) % scores
         score = [];
-        
+        winner = []; % during game 0. 1 if player1 wins, 2 if player2 wins
+
     end
     
     properties (GetAccess='public',SetAccess='private',Hidden) % plot handles
@@ -75,7 +74,8 @@ classdef pongEngine < handle
     end
     
     properties (GetAccess='public',SetAccess='private',Hidden) % current positions and move stuff   
-        
+        paddle1; % row-index starting at 1, always column 1
+        paddle2; % in last column
         ballX = []; %ball location
         ballY = [];
         paddle1V = [];
@@ -172,7 +172,7 @@ classdef pongEngine < handle
             pause(self.frame_delay);
         end
         
-        function ballbounce (V)
+        function ballbounce (self,V)
             %increase first dimension by a random value
             V(1) = V(1) * (rand + 1);
             %normalize vector
@@ -184,7 +184,19 @@ classdef pongEngine < handle
             end
         end
         
-        
+        function startgame (self)
+            self.winner = 0;
+            self.score = [0, 0];
+            self.paddle1V = 0; 
+            self.paddle2V = 0; 
+            self.paddle1 = [self.paddle(1,:)+PADDLE_SPACE; ...
+                self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            self.paddle2 = [self.paddle(1,:)+ self.court_h - self.paddle_space - self.paddle_w; ...
+                self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            resetGame;           
+        end
+
+            
         function next(self, action)
             
             if ~any(strcmp(action,self.actions))
