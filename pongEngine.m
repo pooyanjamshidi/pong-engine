@@ -9,8 +9,8 @@ classdef pongEngine < handle
         numColumns;
         
         ball; % vector location
-        score1=0;
-        score2=0;
+        %score1=0;
+        %score2=0;
         actions = {'up','stay','down'};
         twoPlayer = false;
     end
@@ -37,6 +37,9 @@ classdef pongEngine < handle
         paddle_h = 17;
         paddle=[];
         paddle_space = 10; %space between paddle and goal
+        ball_radius = 1.5; %radius to calculate bouncing
+        goal_buffer = 5; % to avoid goal when bouncing close to goal
+
     end
     
     properties (GetAccess='public',SetAccess='private',Hidden) % game stuff
@@ -196,7 +199,35 @@ classdef pongEngine < handle
             resetGame;           
         end
 
+        function checkGoal(self)
+            goal = false;
             
+            if self.ballX > self.court_w + self.ball_radius + self.goal_buffer
+                self.score(1) = self.score(1) + 1;
+                if self.score(1) == self.max_points;
+                    self.winner = 1;
+                end
+                goal = true;
+            elseif self.ballX < 0 - self.ball_radius - self.goal_buffer
+                self.score(2) = self.score(2) + 1;
+                if self.score(2) == self.max_points;
+                    self.winner = 2;
+                end
+                goal = true;
+            end
+            
+            if goal %a goal was made
+                pause(self.kickoff_delay);
+                resetGame;
+                if self.winner > 0 %somebody won
+                    text(38,55,['Player ' num2str(self.winner) ' is the winner!!!']);
+                    startgame;
+                else %nobody won
+                end
+            end
+        end
+       
+  
         function next(self, action)
             
             if ~any(strcmp(action,self.actions))
