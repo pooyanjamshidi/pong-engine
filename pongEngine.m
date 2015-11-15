@@ -39,8 +39,8 @@ classdef pongEngine < handle
         paddle_space = 10; %space between paddle and goal
         ball_radius = 1.5; %radius to calculate bouncing
         goal_buffer = 5; % to avoid goal when bouncing close to goal
-
     end
+
     
     properties (GetAccess='public',SetAccess='private',Hidden) % game stuff
         max_points = 5;
@@ -62,6 +62,11 @@ classdef pongEngine < handle
         ball_color = [.1, .7, .1];
         ball_out = [.7, 1, .7];
         title_color = 'w';
+    end
+    
+     properties (GetAccess='public',SetAccess='private',Hidden) % plot handles
+        y_factor = 0.01; % not to stock bouncing back and forth
+        p_factor = 2;
     end
     
     properties (GetAccess='public',SetAccess='private',Hidden) % scores
@@ -175,7 +180,7 @@ classdef pongEngine < handle
             pause(self.frame_delay);
         end
         
-        function ballbounce (self,V)
+        function ballbounce(self,V)
             %increase first dimension by a random value
             V(1) = V(1) * (rand + 1);
             %normalize vector
@@ -227,7 +232,85 @@ classdef pongEngine < handle
             end
         end
        
-  
+        function moveBall(self)
+            
+            %paddle boundaries
+            p1T = self.paddle1(2,1);
+            p1B = self.paddle1(2,3);
+            p1L = self.paddle1(1,1);
+            p1R =self. paddle1(1,2);
+            p1Center = ([p1L p1B] + [p1R p1T]) ./ 2;
+            p2T = self.paddle2(2,1);
+            p2B = self.paddle2(2,3);
+            p2L = self.paddle2(1,1);
+            p2R = self.paddle2(1,2);
+            p2Center = ([p2L p2B] + [p2R p2T]) ./ 2;
+            
+            %temporary new ball location, only apply if ball doesn't hit anything.
+            newX = self.ballX + (self.ballSpeed * self.ballV(1));
+            newY = self.ballY + (self.ballSpeed * self.ballV(2));
+            
+            %hit test right wall
+            if (newX > (self.court_w - self.ball_radius) ...
+                    && (self.ballY<self.goal_low+self.ball_radius || newY>self.goal_up-self.ball_radius))
+                %hit right wall
+                if (newY < self.goal_up && newY > self.goal_up - self.ball_radius)
+                    %hit upper goal edge
+                    ballbounce([newX - self.court_w, newY - self.goal_up]);
+                elseif (newY > self.goal_low && newY < self.goal_low + self.ball_radius)
+                    %hit bottom goal edge
+                    ballbounce([newX - self.court_w, newY - self.goal_low]);
+                else
+                    %hit flat part of right wall
+                    ballbounce([-1 * abs(self.ballV(1)), self.ballV(2)]);
+                end
+                
+                %hit test left wall
+            elseif (newX < self.ball_radius ...
+                    && (newY<self.goal_low+self.ball_radius || newY>self.goal_up-self.ball_radius))
+                %hit left wall
+                if (newY < self.goal_up && newY > self.goal_up - self.ball_radius)
+                    %hit bottom goal edge
+                    ballbounce([newX, newY - self.goal_up]);
+                elseif (newY > self.goal_low && newY > self.goal_low + self.ball_radius)
+                    %hit top goal edge
+                    ballbounce([newX, newY - self.goal_low]);
+                else
+                    ballbounce([abs(self.ballV(1)), self.ballV(2)]);
+                end
+                
+                %hit test top wall
+            elseif (newY > (self.court_h - self.ball_radius))
+                %hit top wall
+                ballbounce([self.ballV(1), -1 * (self.y_factor + abs(self.ballV(2)))]);
+                %hit test bottom wall
+            elseif (newY < self.ball_radius)
+                %hit bottom wall,
+                ballbounce([self.ballV(1), (self.y_factor + abs(self.ballV(2)))]);
+                
+                %hit test paddle 1
+            elseif (newX < p1R + self.ball_radius ...
+                    && newX > p1L - self.ball_radius ...
+                    && newY < p1T + self.ball_radius ...
+                    && newY > p1B - self.ball_radius)
+                ballbounce([(self.ballX-p1Center(1)) * self.p_factor, newY-p1Center(2)]);
+                
+                %hit test paddle 2
+            elseif (newX < p2R + self.ball_radius ...
+                    && newX > p2L - self.ball_radius ...
+                    && newY < p2T + self.ball_radius ...
+                    && newY > p2B - self.ball_radius)
+                ballbounce([(self.ballX-p2Center(1)) * self.p_factor, newY-p2Center(2)]);
+            else
+                %no hits
+            end
+            
+            %move ball to new location
+            self.ballX = newX;
+            self.ballY = newY;
+            
+        end
+        
         function next(self, action)
             
             if ~any(strcmp(action,self.actions))
