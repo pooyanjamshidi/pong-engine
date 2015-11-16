@@ -71,7 +71,7 @@ classdef pongEngine < handle
         p_factor = 2;
     end
     
-    properties (GetAccess='public',SetAccess='private',Hidden) % scores
+    properties (GetAccess='public',SetAccess='private') % scores
         score = [];
         winner = []; % during game 0. 1 if player1 wins, 2 if player2 wins
 
@@ -103,7 +103,6 @@ classdef pongEngine < handle
             end
             
             
-            
             self.numRows = n;
             self.numColumns = m;
             %self.paddle1 = ceil(self.numRows/2); % paddle starts central
@@ -118,8 +117,7 @@ classdef pongEngine < handle
             self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
         end
         
-        function createCourt(self)
-            
+        function createCourt(self)            
             scrsz = get(0,'ScreenSize');
             court_handle = figure('Position',[(scrsz(3)-self.fig_w)/2 ...
                 (scrsz(4)-self.fig_h)/2 self.fig_w, self.fig_h]);
@@ -194,7 +192,7 @@ classdef pongEngine < handle
             end
         end
         
-        function startgame (self)
+        function startGame (self)
             self.winner = 0;
             self.score = [0, 0];
             self.paddle1V = 0; 
@@ -228,7 +226,7 @@ classdef pongEngine < handle
                 resetGame;
                 if self.winner > 0 %somebody won
                     text(38,55,['Player ' num2str(self.winner) ' is the winner!!!']);
-                    startgame;
+                    startGame;
                 else %nobody won
                 end
             end
