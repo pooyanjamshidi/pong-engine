@@ -1,6 +1,6 @@
 function [score]=letsplay()
 close all
-clear all
+clear
 clc
 try
     pe= pongEngine();

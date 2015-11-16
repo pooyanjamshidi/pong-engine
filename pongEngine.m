@@ -21,7 +21,7 @@ classdef pongEngine < handle
     end
     
     
-    properties (GetAccess='public',SetAccess='private',Hidden) % size stuff
+    properties (GetAccess='private',SetAccess='private',Hidden) % size stuff
         fig_w = 800; %pixels
         fig_h = 480;
         court_w = 150; %width in plot units. this will be main units for program
@@ -41,7 +41,7 @@ classdef pongEngine < handle
     end
     
     
-    properties (GetAccess='public',SetAccess='private',Hidden) % game stuff
+    properties (GetAccess='private',SetAccess='private',Hidden) % game stuff
         max_points = 2;
         kickoff_delay = 1;
         min_ball_speed= 1;
@@ -64,15 +64,14 @@ classdef pongEngine < handle
         title_color = 'w';
     end
     
-    properties (GetAccess='public',SetAccess='private',Hidden) % plot handles
+    properties (GetAccess='private',SetAccess='private',Hidden) % plot handles
         y_factor = 0.01; % not to stock bouncing back and forth
         p_factor = 2;
     end
     
     properties (GetAccess='public',SetAccess='private') % scores
         score = [];
-        winner = []; % during game 0. 1 if player1 wins, 2 if player2 wins
-        
+        winner = []; % during game 0. 1 if player1 wins, 2 if player2 wins        
     end
     
     properties (GetAccess='public',SetAccess='private') % plot handles
@@ -261,7 +260,7 @@ classdef pongEngine < handle
             p2R = self.paddle2(1,2);
             p2Center = ([p2L p2B] + [p2R p2T]) ./ 2;
             
-            %temporary new ball location, only apply if ball doesn't hit anything.
+            % temporary new ball location
             newX = self.ballX + (self.ballSpeed * self.ballV(1));
             newY = self.ballY + (self.ballSpeed * self.ballV(2));
             
