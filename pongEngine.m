@@ -40,18 +40,17 @@ classdef pongEngine < handle
         ball_radius = 1.5; %radius to calculate bouncing
         goal_buffer = 5; % to avoid goal when bouncing close to goal
     end
-
+    
     
     properties (GetAccess='public',SetAccess='private',Hidden) % game stuff
-        max_points = 5;
+        max_points = 10;
         kickoff_delay = 1;
         min_ball_speed= 1;
         frame_delay = 0.009;
         ball_acceleration_factor = 0.05; %how much ball accelerates each bounce.
         max_speed = 4;
         paddle_speed = 1.3;
-       
-
+        
     end
     
     properties (GetAccess='private',SetAccess='private',Hidden) % color stuff
@@ -66,7 +65,7 @@ classdef pongEngine < handle
         title_color = 'w';
     end
     
-     properties (GetAccess='public',SetAccess='private',Hidden) % plot handles
+    properties (GetAccess='public',SetAccess='private',Hidden) % plot handles
         y_factor = 0.01; % not to stock bouncing back and forth
         p_factor = 2;
     end
@@ -74,16 +73,17 @@ classdef pongEngine < handle
     properties (GetAccess='public',SetAccess='private') % scores
         score = [];
         winner = []; % during game 0. 1 if player1 wins, 2 if player2 wins
-
+        
     end
     
-    properties (GetAccess='public',SetAccess='private',Hidden) % plot handles
+    properties (GetAccess='public',SetAccess='private') % plot handles
+        court_handle=[];
         ballPlot = [];
         paddle1Plot = [];
         paddle2Plot = [];
     end
     
-    properties (GetAccess='public',SetAccess='private',Hidden) % current positions and move stuff   
+    properties (GetAccess='public',SetAccess='private') % current positions and move stuff
         paddle1; % row-index starting at 1, always column 1
         paddle2; % in last column
         ballX = []; %ball location
@@ -91,24 +91,26 @@ classdef pongEngine < handle
         paddle1V = [];
         paddle2V = [];
         ballSpeed=[];
-        ballV=[]; 
+        ballV=[];
     end
     
     
     methods
-        function self = pongEngine(n,m) % constructor, can specify size
-            if nargin < 2
-                n=9; % height
-                m=19; % width
-            end
+        function self = pongEngine() % constructor, can specify size
+            % p1 and p2 should determine paddle1V and paddle2V respectively
             
-            
-            self.numRows = n;
-            self.numColumns = m;
-            %self.paddle1 = ceil(self.numRows/2); % paddle starts central
-            %self.paddle2 = ceil(self.numRows/2);
-            self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)]; % middle of field
-            self.velocity = [randi(3)-2,2*randi(2)-3]; % random initial movement (but not orthogonal)
+            %             if nargin < 2
+            %                 n=9; % height
+            %                 m=19; % width
+            %             end
+            %
+            %
+            %             self.numRows = n;
+            %             self.numColumns = m;
+            %             self.paddle1 = ceil(self.numRows/2); % paddle starts central
+            %             self.paddle2 = ceil(self.numRows/2);
+            %             self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)]; % middle of field
+            %             self.velocity = [randi(3)-2,2*randi(2)-3]; % random initial movement (but not orthogonal)
             
             self.score = [0, 0];
             
@@ -117,17 +119,19 @@ classdef pongEngine < handle
             self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
         end
         
-        function createCourt(self)            
+        function createCourt(self)
             scrsz = get(0,'ScreenSize');
-            court_handle = figure('Position',[(scrsz(3)-self.fig_w)/2 ...
+            self.court_handle = figure('Position',[(scrsz(3)-self.fig_w)/2 ...
                 (scrsz(4)-self.fig_h)/2 self.fig_w, self.fig_h]);
             % we cannot obviously resize the court!!!
-            set(court_handle, 'Resize', 'off');
+            %register keydown and keyup listeners
+            set(self.court_handle,'KeyPressFcn',@self.keyDown, 'KeyReleaseFcn', @self.keyUp);
+            set(self.court_handle, 'Resize', 'off');
             axis([0 self.court_w 0 self.court_h]);
             axis manual;
             %set color and hide axis ticks.
             set(gca, 'color', self.court_color, 'YTick', [], 'XTick', []);
-            set(court_handle, 'color', self.background_color);
+            set(self.court_handle, 'color', self.background_color);
             hold on;
             %plot walls
             topWallXs = [0,0,self.court_w,self.court_w];
@@ -161,6 +165,9 @@ classdef pongEngine < handle
         end
         
         function resetGame(self)
+            % kick off the ball randomely!
+            self.ballbounce([1-(2*rand), 1-(2*rand)]);
+            
             self.ballSpeed=self.min_ball_speed;
             self.ballX = self.court_w/2;
             self.ballY = self.court_h/2;
@@ -186,24 +193,24 @@ classdef pongEngine < handle
             %normalize vector
             V = V ./ (sqrt(V(1)^2 + V(2)^2));
             self.ballV = V;
-            %to make it more challenging, the ball increases the speed 
+            %to make it more challenging, the ball increases the speed
             if (self.ballSpeed +  self.ball_acceleration_factor < self.max_speed)
                 self.ballSpeed = self.ballSpeed +  self.ball_acceleration_factor;
             end
         end
         
-        function startGame (self)
+        function startGame(self)
             self.winner = 0;
             self.score = [0, 0];
-            self.paddle1V = 0; 
-            self.paddle2V = 0; 
-            self.paddle1 = [self.paddle(1,:)+PADDLE_SPACE; ...
+            self.paddle1V = 0;
+            self.paddle2V = 0;
+            self.paddle1 = [self.paddle(1,:)+self.paddle_space; ...
                 self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
-            self.paddle2 = [self.paddle(1,:)+ self.court_h - self.paddle_space - self.paddle_w; ...
+            self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; ...
                 self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
-            resetGame;           
+            self.resetGame;
         end
-
+        
         function checkGoal(self)
             goal = false;
             
@@ -223,15 +230,15 @@ classdef pongEngine < handle
             
             if goal %a goal was made
                 pause(self.kickoff_delay);
-                resetGame;
+                self.resetGame;
                 if self.winner > 0 %somebody won
                     text(38,55,['Player ' num2str(self.winner) ' is the winner!!!']);
-                    startGame;
+                    %self.startGame;
                 else %nobody won
                 end
             end
         end
-       
+        
         function moveBall(self)
             
             %paddle boundaries
@@ -256,13 +263,13 @@ classdef pongEngine < handle
                 %hit right wall
                 if (newY < self.goal_up && newY > self.goal_up - self.ball_radius)
                     %hit upper goal edge
-                    ballbounce([newX - self.court_w, newY - self.goal_up]);
+                    self.ballbounce([newX - self.court_w, newY - self.goal_up]);
                 elseif (newY > self.goal_low && newY < self.goal_low + self.ball_radius)
                     %hit bottom goal edge
-                    ballbounce([newX - self.court_w, newY - self.goal_low]);
+                    self.ballbounce([newX - self.court_w, newY - self.goal_low]);
                 else
                     %hit flat part of right wall
-                    ballbounce([-1 * abs(self.ballV(1)), self.ballV(2)]);
+                    self.ballbounce([-1 * abs(self.ballV(1)), self.ballV(2)]);
                 end
                 
                 %hit test left wall
@@ -271,36 +278,36 @@ classdef pongEngine < handle
                 %hit left wall
                 if (newY < self.goal_up && newY > self.goal_up - self.ball_radius)
                     %hit bottom goal edge
-                    ballbounce([newX, newY - self.goal_up]);
+                    self.ballbounce([newX, newY - self.goal_up]);
                 elseif (newY > self.goal_low && newY > self.goal_low + self.ball_radius)
                     %hit top goal edge
-                    ballbounce([newX, newY - self.goal_low]);
+                    self.ballbounce([newX, newY - self.goal_low]);
                 else
-                    ballbounce([abs(self.ballV(1)), self.ballV(2)]);
+                    self.ballbounce([abs(self.ballV(1)), self.ballV(2)]);
                 end
                 
                 %hit test top wall
             elseif (newY > (self.court_h - self.ball_radius))
                 %hit top wall
-                ballbounce([self.ballV(1), -1 * (self.y_factor + abs(self.ballV(2)))]);
+                self.ballbounce([self.ballV(1), -1 * (self.y_factor + abs(self.ballV(2)))]);
                 %hit test bottom wall
             elseif (newY < self.ball_radius)
                 %hit bottom wall,
-                ballbounce([self.ballV(1), (self.y_factor + abs(self.ballV(2)))]);
+                self.ballbounce([self.ballV(1), (self.y_factor + abs(self.ballV(2)))]);
                 
                 %hit test paddle 1
             elseif (newX < p1R + self.ball_radius ...
                     && newX > p1L - self.ball_radius ...
                     && newY < p1T + self.ball_radius ...
                     && newY > p1B - self.ball_radius)
-                ballbounce([(self.ballX-p1Center(1)) * self.p_factor, newY-p1Center(2)]);
+                self.ballbounce([(self.ballX-p1Center(1)) * self.p_factor, newY-p1Center(2)]);
                 
                 %hit test paddle 2
             elseif (newX < p2R + self.ball_radius ...
                     && newX > p2L - self.ball_radius ...
                     && newY < p2T + self.ball_radius ...
                     && newY > p2B - self.ball_radius)
-                ballbounce([(self.ballX-p2Center(1)) * self.p_factor, newY-p2Center(2)]);
+                self.ballbounce([(self.ballX-p2Center(1)) * self.p_factor, newY-p2Center(2)]);
             else
                 %no hits
             end
@@ -399,7 +406,42 @@ classdef pongEngine < handle
         end
         
         function display(self)
-            disp(self) % placeholder, graphical would be nice
+            self.createCourt;
         end
+        
+        function keyDown(self,src,event)
+            switch event.Key
+                case 'a'
+                    self.paddle1V = 1;
+                case 'z'
+                    self.paddle1V = -1;
+                case 'uparrow'
+                    self.paddle2V = 1;
+                case 'downarrow'
+                    self.paddle2V = -1;
+            end
+        end
+        
+        function keyUp(self,src,event)
+            switch event.Key
+                case 'a'
+                    if self.paddle1V == 1
+                        self.paddle1V = 0;
+                    end
+                case 'z'
+                    if self.paddle1V == -1
+                        self.paddle1V = 0;
+                    end
+                case 'uparrow'
+                    if self.paddle2V == 1
+                        self.paddle2V = 0;
+                    end
+                case 'downarrow'
+                    if self.paddle2V == -1
+                        self.paddle2V = 0;
+                    end
+            end
+        end
+        
     end
 end

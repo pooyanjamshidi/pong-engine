@@ -1,9 +1,15 @@
-function [score]=letsplay(player1,player2)
+function [score]=letsplay()
+close all
+clear all
+clc
 try
-pe= pongEngine(player1,player2);
+pe= pongEngine();
 catch ME
     error('Engine cannot be inistantiated')
 end
+
+
+
 pe.createCourt;
 pe.startGame;
 while ~pe.winner
@@ -15,3 +21,4 @@ end
 score=pe.score;
 
 end
+
