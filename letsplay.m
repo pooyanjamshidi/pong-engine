@@ -9,7 +9,6 @@ catch ME
 end
 
 
-
 pe.createCourt;
 pe.startGame;
 while ~pe.winner

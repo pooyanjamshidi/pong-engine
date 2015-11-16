@@ -5,10 +5,10 @@
 
 classdef pongEngine < handle
     properties (GetAccess='public',SetAccess='private')
-        numRows;
-        numColumns;
+        %numRows;
+        %numColumns;
         
-        ball; % vector location
+        %ball; % vector location
         %score1=0;
         %score2=0;
         actions = {'up','stay','down'};
@@ -272,47 +272,45 @@ classdef pongEngine < handle
                     self.ballbounce([-1 * abs(self.ballV(1)), self.ballV(2)]);
                 end
                 
-                %hit test left wall
+                %hit left wall
             elseif (newX < self.ball_radius ...
-                    && (newY<self.goal_low+self.ball_radius || newY>self.goal_up-self.ball_radius))
+                    && (newY < self.goal_low+self.ball_radius || newY > self.goal_up-self.ball_radius))
                 %hit left wall
                 if (newY < self.goal_up && newY > self.goal_up - self.ball_radius)
-                    %hit bottom goal edge
+                    %hit upper goal edge
                     self.ballbounce([newX, newY - self.goal_up]);
-                elseif (newY > self.goal_low && newY > self.goal_low + self.ball_radius)
-                    %hit top goal edge
+                elseif (newY > self.goal_low && newY < self.goal_low + self.ball_radius)
+                    %hit bottom goal edge
                     self.ballbounce([newX, newY - self.goal_low]);
                 else
                     self.ballbounce([abs(self.ballV(1)), self.ballV(2)]);
                 end
                 
-                %hit test top wall
+                %hit top wall
             elseif (newY > (self.court_h - self.ball_radius))
                 %hit top wall
                 self.ballbounce([self.ballV(1), -1 * (self.y_factor + abs(self.ballV(2)))]);
-                %hit test bottom wall
+                %hit bottom wall
             elseif (newY < self.ball_radius)
                 %hit bottom wall,
                 self.ballbounce([self.ballV(1), (self.y_factor + abs(self.ballV(2)))]);
                 
-                %hit test paddle 1
+                %hit paddle 1
             elseif (newX < p1R + self.ball_radius ...
                     && newX > p1L - self.ball_radius ...
                     && newY < p1T + self.ball_radius ...
                     && newY > p1B - self.ball_radius)
                 self.ballbounce([(self.ballX-p1Center(1)) * self.p_factor, newY-p1Center(2)]);
                 
-                %hit test paddle 2
+                %hit paddle 2
             elseif (newX < p2R + self.ball_radius ...
                     && newX > p2L - self.ball_radius ...
                     && newY < p2T + self.ball_radius ...
                     && newY > p2B - self.ball_radius)
                 self.ballbounce([(self.ballX-p2Center(1)) * self.p_factor, newY-p2Center(2)]);
-            else
-                %no hits
             end
             
-            %move ball to new location
+            %no hits
             self.ballX = newX;
             self.ballY = newY;
             
