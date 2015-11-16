@@ -48,7 +48,9 @@ classdef pongEngine < handle
         min_ball_speed= 1;
         frame_delay = 0.009;
         ball_acceleration_factor = 0.05; %how much ball accelerates each bounce.
-        max_speed = 4; 
+        max_speed = 4;
+        paddle_speed = 1.3;
+       
 
     end
     
@@ -104,16 +106,16 @@ classdef pongEngine < handle
             
             self.numRows = n;
             self.numColumns = m;
-            self.paddle1 = ceil(self.numRows/2); % paddle starts central
-            self.paddle2 = ceil(self.numRows/2);
+            %self.paddle1 = ceil(self.numRows/2); % paddle starts central
+            %self.paddle2 = ceil(self.numRows/2);
             self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)]; % middle of field
             self.velocity = [randi(3)-2,2*randi(2)-3]; % random initial movement (but not orthogonal)
             
             self.score = [0, 0];
             
-            %self.paddle = [0 self.paddle_w self.paddle_w 0 0; self.paddle_h self.paddle_h 0 0 self.paddle_h];
-            %self.paddle1 = [self.paddle(1,:)+self.paddle_space; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
-            %self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            self.paddle = [0 self.paddle_w self.paddle_w 0 0; self.paddle_h self.paddle_h 0 0 self.paddle_h];
+            self.paddle1 = [self.paddle(1,:)+self.paddle_space; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
         end
         
         function createCourt(self)
@@ -310,6 +312,25 @@ classdef pongEngine < handle
             self.ballY = newY;
             
         end
+        
+        function movePaddles(self)
+            %set new paddle y locations
+            self.paddle1(2,:) = self.paddle1(2,:) + (self.paddle_speed * self.paddle1V);
+            self.paddle2(2,:) = self.paddle2(2,:) + (self.paddle_speed * self.paddle2V);
+            %if paddle out of bounds, move it in bounds
+            if self.paddle1(2,1) > self.court_h
+                self.paddle1(2,:) = self.paddle(2,:) + self.court_h - self.paddle_h;
+            elseif self.paddle1(2,3) < 0
+                self.paddle1(2,:) = self.paddle(2,:);
+            end
+            if self.paddle2(2,1) > self.court_h
+                self.paddle2(2,:) = self.paddle(2,:) + self.court_h - self.paddle_h;
+            elseif self.paddle2(2,3) < 0
+                self.paddle2(2,:) = self.paddle(2,:);
+            end
+        end
+        
+        
         
         function next(self, action)
             
