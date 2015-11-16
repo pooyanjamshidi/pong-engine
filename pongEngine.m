@@ -1,6 +1,6 @@
 % Authors: Pooyan Jamshidi and Benedikt Schoenhense
 % Imperial College London
-% this is the engine for playing the pong game developed for the course
+% An engine for playing the pong game developed for the course
 % "424H - Learning in Autonomous Systems" Aldo Faisal
 
 classdef pongEngine < handle
@@ -16,8 +16,7 @@ classdef pongEngine < handle
     end
     
     properties (GetAccess='private',SetAccess='private',Hidden)
-        velocity;
-        pFail = 0.1; % prob of action failing
+        %velocity;
         pRedir = 0.5; % prob of ball redirecting from paddle
     end
     
@@ -43,7 +42,7 @@ classdef pongEngine < handle
     
     
     properties (GetAccess='public',SetAccess='private',Hidden) % game stuff
-        max_points = 10;
+        max_points = 2;
         kickoff_delay = 1;
         min_ball_speed= 1;
         frame_delay = 0.009;
@@ -86,7 +85,7 @@ classdef pongEngine < handle
     properties (GetAccess='public',SetAccess='private') % current positions and move stuff
         paddle1; % row-index starting at 1, always column 1
         paddle2; % in last column
-        ballX = []; %ball location
+        ballX = []; % ball location
         ballY = [];
         paddle1V = [];
         paddle2V = [];
@@ -94,6 +93,10 @@ classdef pongEngine < handle
         ballV=[];
     end
     
+    properties (GetAccess='private',SetAccess='private',Hidden) % noise stuff
+        noise_sigma=0.1;
+        pFail = 0.1; % prob of action failing
+    end
     
     methods
         function self = pongEngine() % constructor, can specify size
@@ -119,12 +122,17 @@ classdef pongEngine < handle
             self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
         end
         
+        function [ball]=getPositions(self)
+            noise=normrnd(0,self.noise_sigma,[1 2]);
+            ball=[self.ballX+noise(1),self.ballY+noise(1)];
+        end
+        
         function createCourt(self)
             scrsz = get(0,'ScreenSize');
             self.court_handle = figure('Position',[(scrsz(3)-self.fig_w)/2 ...
                 (scrsz(4)-self.fig_h)/2 self.fig_w, self.fig_h]);
             % we cannot obviously resize the court!!!
-            %register keydown and keyup listeners
+            % register keydown and keyup
             set(self.court_handle,'KeyPressFcn',@self.keyDown, 'KeyReleaseFcn', @self.keyUp);
             set(self.court_handle, 'Resize', 'off');
             axis([0 self.court_w 0 self.court_h]);
@@ -232,7 +240,7 @@ classdef pongEngine < handle
                 pause(self.kickoff_delay);
                 self.resetGame;
                 if self.winner > 0 %somebody won
-                    text(38,55,['Player ' num2str(self.winner) ' is the winner!!!']);
+                    %text(38,55,['Player ' num2str(self.winner) ' is the winner!!!']);
                     %self.startGame;
                 else %nobody won
                 end
@@ -335,72 +343,86 @@ classdef pongEngine < handle
         
         
         
-        function next(self, action)
+        function next(self, player, action)
             
             if ~any(strcmp(action,self.actions))
                 error('Action not recognised')
             end
             
-            self.ball = self.ball + self.velocity; % move ball
+            %             self.ball = self.ball + self.velocity; % move ball
             
-            if rand>self.pFail % unless action fails
-                if strcmp(action,self.actions(1)) && self.paddle1 ~= 1
-                    self.paddle1=self.paddle1-1; % move paddle up
-                elseif strcmp(action,self.actions(3)) && self.paddle1 ~= self.numRows
-                    self.paddle1=self.paddle1+1; % move paddle down
-                end
-            end
-            
-            
-            if ~self.twoPlayer && rand>self.pFail % naive bot that follows ball
-                if self.ball(1)>self.paddle2
-                    self.paddle2 = self.paddle2+1;
-                elseif self.ball(1)<self.paddle2
-                    self.paddle2 = self.paddle2 -1;
-                end
-            end
-            
-            if self.ball(1)==1 || self.ball(1)==self.numRows % reflect off side walls
-                self.velocity(1)=-self.velocity(1);
-            end
-            
-            
-            if self.ball(2)==1 % when ball is at player end
-                if self.ball(1) == self.paddle1 % if paddle is there
-                    self.velocity(2)=-self.velocity(2); % reflects
-                    if rand < self.pRedir % might change angle of bounce
-                        if self.velocity(1) ~= 0;
-                            self.velocity(1) =0;
-                        else
-                            self.velocity(1)=2*randi(2)-3;
+            switch player
+                case 1
+                    if rand>self.pFail % unless action fails
+                        if strcmp(action,self.actions(1))
+                            self.paddle1V =-1; % move paddle up
+                        elseif strcmp(action,self.actions(2))
+                            self.paddle1V =0; % stay here, freeze
+                        elseif strcmp(action,self.actions(3))
+                            self.paddle1V=1; % move paddle down
                         end
                     end
-                else % if player misses ball
-                    self.score2 = self.score2 +1; % opp. scores
-                    disp('Point for player 2')
-                    self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)]; % reset
-                    self.velocity = [randi(3)-2,2*randi(2)-3];
-                end
-            end
-            
-            if self.ball(2)==self.numColumns % same as above for player 2
-                if self.ball(1) == self.paddle2
-                    self.velocity(2)=-self.velocity(2);
-                    if rand < self.pRedir
-                        if self.velocity(1) ~= 0;
-                            self.velocity(1) =0;
-                        else
-                            self.velocity(1)=2*randi(2)-3;
+                case 2
+                    if rand>self.pFail % unless action fails
+                        if strcmp(action,self.actions(1))
+                            self.paddle2V =-1; % move paddle up
+                        elseif strcmp(action,self.actions(2))
+                            self.paddle2V =0; % stay here, freeze
+                        elseif strcmp(action,self.actions(3))
+                            self.paddle2V=1; % move paddle down
                         end
                     end
-                else
-                    self.score1 = self.score1 +1;
-                    disp('Point for player 1')
-                    self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)];
-                    self.velocity = [randi(3)-2,2*randi(2)-3];
-                end
             end
-            display(self); % display game-state
+            
+            %             if ~self.twoPlayer && rand>self.pFail % naive bot that follows ball
+            %                 if self.ball(1)>self.paddle2
+            %                     self.paddle2 = self.paddle2+1;
+            %                 elseif self.ball(1)<self.paddle2
+            %                     self.paddle2 = self.paddle2 -1;
+            %                 end
+            %             end
+            %
+            %             if self.ball(1)==1 || self.ball(1)==self.numRows % reflect off side walls
+            %                 self.velocity(1)=-self.velocity(1);
+            %             end
+            %
+            %
+            %             if self.ball(2)==1 % when ball is at player end
+            %                 if self.ball(1) == self.paddle1 % if paddle is there
+            %                     self.velocity(2)=-self.velocity(2); % reflects
+            %                     if rand < self.pRedir % might change angle of bounce
+            %                         if self.velocity(1) ~= 0;
+            %                             self.velocity(1) =0;
+            %                         else
+            %                             self.velocity(1)=2*randi(2)-3;
+            %                         end
+            %                     end
+            %                 else % if player misses ball
+            %                     self.score2 = self.score2 +1; % opp. scores
+            %                     disp('Point for player 2')
+            %                     self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)]; % reset
+            %                     self.velocity = [randi(3)-2,2*randi(2)-3];
+            %                 end
+            %             end
+            %
+            %             if self.ball(2)==self.numColumns % same as above for player 2
+            %                 if self.ball(1) == self.paddle2
+            %                     self.velocity(2)=-self.velocity(2);
+            %                     if rand < self.pRedir
+            %                         if self.velocity(1) ~= 0;
+            %                             self.velocity(1) =0;
+            %                         else
+            %                             self.velocity(1)=2*randi(2)-3;
+            %                         end
+            %                     end
+            %                 else
+            %                     self.score1 = self.score1 +1;
+            %                     disp('Point for player 1')
+            %                     self.ball = [ceil(self.numRows/2), ceil(self.numColumns/2)];
+            %                     self.velocity = [randi(3)-2,2*randi(2)-3];
+            %                 end
+            %             end
+            %             display(self); % display game-state
         end
         
         function display(self)
