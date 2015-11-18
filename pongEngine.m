@@ -26,9 +26,7 @@ classdef pongEngine < handle
         fig_h = 480;
         court_w = 150; %width in plot units. this will be main units for program
         court_h = 100; %height
-        goal_size = 55;
-        goal_up = (100+55)/2;
-        goal_low = (100-55)/2;
+        goal_size = 55;  
         wall_w = 3;
         center_r = 15; %radius of the circle
         ball_size = 10;
@@ -40,6 +38,10 @@ classdef pongEngine < handle
         goal_buffer = 5; % to avoid goal when bouncing close to goal
     end
     
+    properties (GetAccess='private',SetAccess='private',Hidden) % static position stuff        
+        goal_up = (100+55)/2;
+        goal_low = (100-55)/2;
+    end
     
     properties (GetAccess='private',SetAccess='private',Hidden) % game stuff
         max_points = 2;
@@ -64,14 +66,14 @@ classdef pongEngine < handle
         title_color = 'w';
     end
     
-    properties (GetAccess='private',SetAccess='private',Hidden) % plot handles
+    properties (GetAccess='private',SetAccess='private',Hidden) % random factors 
         y_factor = 0.01; % not to stock bouncing back and forth
         p_factor = 2;
     end
     
     properties (GetAccess='public',SetAccess='private') % scores
         score = [];
-        winner = []; % during game 0. 1 if player1 wins, 2 if player2 wins        
+        winner; % during game 0. 1 if player1 wins, 2 if player2 wins        
     end
     
     properties (GetAccess='public',SetAccess='private') % plot handles
@@ -81,7 +83,7 @@ classdef pongEngine < handle
         paddle2Plot = [];
     end
     
-    properties (GetAccess='public',SetAccess='private') % current positions and move stuff
+    properties (GetAccess='private',SetAccess='private') % current positions and move stuff
         paddle1; % row-index starting at 1, always column 1
         paddle2; % in last column
         ballX = []; % ball location
@@ -93,7 +95,7 @@ classdef pongEngine < handle
     end
     
     properties (GetAccess='private',SetAccess='private',Hidden) % noise stuff
-        noise_sigma=0.1;
+        noise_sigma=17/2;
         pFail = 0.1; % prob of action failing
     end
     
@@ -121,11 +123,17 @@ classdef pongEngine < handle
             self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
         end
         
-        function [ball]=getPositions(self)
+        function [ball]=getnoisyPosition(self)
             noise=normrnd(0,self.noise_sigma,[1 2]);
             ball=[self.ballX+noise(1),self.ballY+noise(1)];
         end
         
+        function [V]=calculateBallV(self,ballP1,ballP2)
+            V(1)=ballP2(1)-ballP1(1);
+            V(2)=ballP2(2)-ballP1(2);
+            V = V ./ (sqrt(V(1)^2 + V(2)^2));
+        end
+            
         function createCourt(self)
             scrsz = get(0,'ScreenSize');
             self.court_handle = figure('Position',[(scrsz(3)-self.fig_w)/2 ...
@@ -179,6 +187,13 @@ classdef pongEngine < handle
             self.ballX = self.court_w/2;
             self.ballY = self.court_h/2;
             
+            %position the paddles in middle
+            self.paddle1 = [self.paddle(1,:)+self.paddle_space; ...
+                self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; ...
+                self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+            
+            
             titleStr = sprintf('%d / %d%19d / %d', self.score(1), self.max_points, self.score(2), self.max_points);
             t = title(titleStr, 'Color', self.title_color);
             set(t, 'FontName', 'Courier','FontSize', 15, 'FontWeight', 'Bold');
@@ -193,7 +208,7 @@ classdef pongEngine < handle
             drawnow;
             pause(self.frame_delay);
         end
-        
+         
         function ballbounce(self,V)
             %increase first dimension by a random value
             V(1) = V(1) * (rand + 1);
@@ -211,10 +226,10 @@ classdef pongEngine < handle
             self.score = [0, 0];
             self.paddle1V = 0;
             self.paddle2V = 0;
-            self.paddle1 = [self.paddle(1,:)+self.paddle_space; ...
-                self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
-            self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; ...
-                self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+%             self.paddle1 = [self.paddle(1,:)+self.paddle_space; ...
+%                 self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
+%             self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; ...
+%                 self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
             self.resetGame;
         end
         
@@ -354,21 +369,21 @@ classdef pongEngine < handle
                 case 1
                     if rand>self.pFail % unless action fails
                         if strcmp(action,self.actions(1))
-                            self.paddle1V =-1; % move paddle up
+                            self.paddle1V =1; % move paddle up
                         elseif strcmp(action,self.actions(2))
                             self.paddle1V =0; % stay here, freeze
                         elseif strcmp(action,self.actions(3))
-                            self.paddle1V=1; % move paddle down
+                            self.paddle1V=-1; % move paddle down
                         end
                     end
                 case 2
                     if rand>self.pFail % unless action fails
                         if strcmp(action,self.actions(1))
-                            self.paddle2V =-1; % move paddle up
+                            self.paddle2V =1; % move paddle up
                         elseif strcmp(action,self.actions(2))
                             self.paddle2V =0; % stay here, freeze
                         elseif strcmp(action,self.actions(3))
-                            self.paddle2V=1; % move paddle down
+                            self.paddle2V=-1; % move paddle down
                         end
                     end
             end
@@ -428,6 +443,8 @@ classdef pongEngine < handle
             self.createCourt;
         end
         
+        
+        % test functions
         function keyDown(self,src,event)
             switch event.Key
                 case 'a'

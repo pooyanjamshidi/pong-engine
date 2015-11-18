@@ -5,6 +5,7 @@ clc
 try
     pe= pongEngine();
 catch ME
+    disp(ME.message);
     error('Engine cannot be inistantiated')
 end
 
