@@ -123,15 +123,40 @@ classdef pongEngine < handle
             self.paddle2 = [self.paddle(1,:)+ self.court_w - self.paddle_space - self.paddle_w; self.paddle(2,:)+((self.court_h - self.paddle_h)/2)];
         end
         
-        function [ball]=getnoisyPosition(self)
+        function [ball]=getnoisyBallPosition(self)
             noise=normrnd(0,self.noise_sigma,[1 2]);
-            ball=[self.ballX+noise(1),self.ballY+noise(1)];
+            ball=round([self.ballX+noise(1),self.ballY+noise(1)]);
+        end
+        
+        function [position]=getmycenterPosition(self,player)
+            %paddle boundaries
+            p1T = self.paddle1(2,1);
+            p1B = self.paddle1(2,3);
+            p1L = self.paddle1(1,1);
+            p1R =self. paddle1(1,2);
+            p1Center = ([p1L p1B] + [p1R p1T]) ./ 2;
+            p2T = self.paddle2(2,1);
+            p2B = self.paddle2(2,3);
+            p2L = self.paddle2(1,1);
+            p2R = self.paddle2(1,2);
+            p2Center = ([p2L p2B] + [p2R p2T]) ./ 2;
+            switch player
+                case 1
+                    position=round(p1Center);
+                case 2
+                    position=round(p2Center);
+            end
         end
         
         function [V]=calculateBallV(self,ballP1,ballP2)
             V(1)=ballP2(1)-ballP1(1);
             V(2)=ballP2(2)-ballP1(2);
             V = V ./ (sqrt(V(1)^2 + V(2)^2));
+        end
+        function [V]=getnoisyBallV(self)
+           % TODO: add noise
+           V=self.ballV;
+            
         end
             
         function createCourt(self)

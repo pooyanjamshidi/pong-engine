@@ -10,13 +10,17 @@ catch ME
 end
 
 %% initialize player 1 and player 2 struct
-
+player1=player(1,pe);
+player2=player(2,pe);
 %%
 pe.createCourt;
 pe.startGame;
 while ~pe.winner
     pe.moveBall;
     % player1 and player2 call next here to do an action: next(pe, player, action)
+    player1.play;
+    player2.play;
+    
     pe.movePaddles;
     pe.refreshCourt;
     pe.checkGoal;
